@@ -1,0 +1,89 @@
+/* Glean — design tokens & theming.
+   --accent / --accent-strong / --accent-soft are injected at runtime by JS
+   from the user's chosen accent color. Everything else themes via [data-theme]. */
+
+:root {
+  /* Accent (overridden live by settings; emerald is the default brand color) */
+  --accent: #10b981;
+  --accent-strong: #059669;
+  --accent-soft: rgba(16, 185, 129, 0.12);
+  --accent-contrast: #ffffff;
+
+  /* Light theme neutrals */
+  --bg: #f5f7f9;
+  --bg-grad: radial-gradient(1200px 600px at 100% -10%, var(--accent-soft), transparent 60%);
+  --surface: #ffffff;
+  --surface-2: #f1f3f5;
+  --surface-3: #e9edf1;
+  --border: #e5e8ec;
+  --border-strong: #d4d9df;
+  --text: #131820;
+  --text-muted: #5a6472;
+  --text-faint: #8b94a2;
+  --danger: #e5484d;
+  --danger-soft: rgba(229, 72, 77, 0.12);
+  --warn: #f5a524;
+
+  --shadow-sm: 0 1px 2px rgba(16, 24, 40, 0.06), 0 1px 3px rgba(16, 24, 40, 0.07);
+  --shadow-md: 0 6px 16px rgba(16, 24, 40, 0.08), 0 2px 6px rgba(16, 24, 40, 0.05);
+  --shadow-lg: 0 16px 40px rgba(16, 24, 40, 0.18);
+
+  --radius-xs: 6px;
+  --radius-sm: 9px;
+  --radius: 13px;
+  --radius-lg: 18px;
+  --radius-xl: 26px;
+  --radius-pill: 999px;
+
+  --font: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, system-ui, sans-serif;
+  --font-num: "SF Mono", "JetBrains Mono", ui-monospace, Menlo, monospace;
+
+  --dur-fast: 120ms;
+  --dur: 220ms;
+  --dur-slow: 380ms;
+  --ease: cubic-bezier(0.22, 0.61, 0.36, 1);
+  --ease-spring: cubic-bezier(0.34, 1.4, 0.5, 1);
+}
+
+[data-theme="dark"] {
+  --bg: #0c0f14;
+  --bg-grad: radial-gradient(1200px 600px at 100% -10%, var(--accent-soft), transparent 55%);
+  --surface: #151a21;
+  --surface-2: #1b212a;
+  --surface-3: #222a34;
+  --border: #283039;
+  --border-strong: #36404b;
+  --text: #e9eef4;
+  --text-muted: #9aa6b3;
+  --text-faint: #6b7785;
+  --danger: #ff6369;
+  --danger-soft: rgba(255, 99, 105, 0.14);
+  --warn: #ffc560;
+
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.45);
+  --shadow-md: 0 8px 22px rgba(0, 0, 0, 0.5);
+  --shadow-lg: 0 18px 46px rgba(0, 0, 0, 0.65);
+}
+
+/* Animation preference gates (set on <html> from settings) */
+:root.anim-off *,
+:root.anim-off *::before,
+:root.anim-off *::after {
+  animation-duration: 0.001ms !important;
+  animation-delay: 0ms !important;
+  transition-duration: 0.001ms !important;
+}
+:root.anim-reduced {
+  --dur-fast: 80ms;
+  --dur: 120ms;
+  --dur-slow: 160ms;
+  --ease-spring: var(--ease);
+}
+@media (prefers-reduced-motion: reduce) {
+  :root:not(.anim-force) *,
+  :root:not(.anim-force) *::before,
+  :root:not(.anim-force) *::after {
+    animation-duration: 0.001ms !important;
+    transition-duration: 0.001ms !important;
+  }
+}

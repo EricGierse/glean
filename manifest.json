@@ -1,0 +1,46 @@
+{
+  "manifest_version": 3,
+  "name": "Glean — Receipt & Expense Harvester",
+  "version": "1.0.0",
+  "description": "Glean automatically gathers receipts & invoices from the web into clean, exportable books. Local-first, private, effortless.",
+  "action": {
+    "default_popup": "popup.html",
+    "default_title": "Glean — capture a receipt",
+    "default_icon": {
+      "16": "icons/icon16.png",
+      "32": "icons/icon32.png",
+      "48": "icons/icon48.png",
+      "128": "icons/icon128.png"
+    }
+  },
+  "icons": {
+    "16": "icons/icon16.png",
+    "32": "icons/icon32.png",
+    "48": "icons/icon48.png",
+    "128": "icons/icon128.png"
+  },
+  "background": {
+    "service_worker": "background.js",
+    "type": "module"
+  },
+  "options_page": "options.html",
+  "permissions": ["storage", "unlimitedStorage", "contextMenus", "activeTab", "identity"],
+  "host_permissions": ["https://generativelanguage.googleapis.com/*", "https://www.googleapis.com/*"],
+  "oauth2": {
+    "client_id": "REPLACE_WITH_YOUR_GOOGLE_OAUTH_CLIENT_ID.apps.googleusercontent.com",
+    "scopes": ["openid", "email", "profile"]
+  },
+  "content_scripts": [
+    {
+      "matches": ["http://*/*", "https://*/*"],
+      "js": ["content.js"],
+      "run_at": "document_idle"
+    }
+  ],
+  "web_accessible_resources": [
+    {
+      "resources": ["icons/icon128.png", "icons/logo.svg"],
+      "matches": ["http://*/*", "https://*/*"]
+    }
+  ]
+}

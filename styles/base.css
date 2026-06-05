@@ -1,0 +1,188 @@
+/* Glean — base reset, components & animation library (shared by popup + options) */
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+html, body {
+  font-family: var(--font);
+  color: var(--text);
+  background: var(--bg);
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+  font-size: 14px;
+  line-height: 1.45;
+}
+
+body { background-image: var(--bg-grad); background-attachment: fixed; }
+
+::selection { background: var(--accent-soft); }
+
+/* Scrollbar */
+::-webkit-scrollbar { width: 10px; height: 10px; }
+::-webkit-scrollbar-thumb { background: var(--border-strong); border-radius: 999px; border: 3px solid transparent; background-clip: content-box; }
+::-webkit-scrollbar-thumb:hover { background: var(--text-faint); background-clip: content-box; }
+
+h1, h2, h3, h4 { font-weight: 700; letter-spacing: -0.01em; }
+a { color: var(--accent-strong); text-decoration: none; }
+a:hover { text-decoration: underline; }
+
+.muted { color: var(--text-muted); }
+.faint { color: var(--text-faint); }
+.num { font-variant-numeric: tabular-nums; font-feature-settings: "tnum"; }
+.row { display: flex; align-items: center; gap: 10px; }
+.col { display: flex; flex-direction: column; }
+.spacer { flex: 1; }
+.hidden { display: none !important; }
+.center { display: flex; align-items: center; justify-content: center; }
+
+/* ---------- Buttons ---------- */
+.btn {
+  display: inline-flex; align-items: center; justify-content: center; gap: 7px;
+  font: inherit; font-weight: 600; font-size: 13.5px;
+  padding: 9px 15px; border-radius: var(--radius-sm);
+  border: 1px solid transparent; cursor: pointer; user-select: none;
+  background: var(--surface-2); color: var(--text);
+  transition: transform var(--dur-fast) var(--ease), background var(--dur) var(--ease),
+              box-shadow var(--dur) var(--ease), border-color var(--dur) var(--ease), opacity var(--dur);
+}
+.btn:hover { background: var(--surface-3); transform: translateY(-1px); }
+.btn:active { transform: translateY(0) scale(0.965); }
+.btn:disabled { opacity: 0.5; cursor: not-allowed; }
+.btn svg { width: 16px; height: 16px; }
+
+.btn-primary {
+  background: linear-gradient(135deg, var(--accent), var(--accent-strong));
+  color: var(--accent-contrast);
+  box-shadow: 0 4px 14px -3px var(--accent), inset 0 1px 0 rgba(255, 255, 255, 0.25);
+}
+.btn-primary:hover { filter: brightness(1.05); background: linear-gradient(135deg, var(--accent), var(--accent-strong)); }
+.btn-ghost { background: transparent; border-color: var(--border); }
+.btn-ghost:hover { background: var(--surface-2); border-color: var(--border-strong); }
+.btn-danger { background: var(--danger-soft); color: var(--danger); }
+.btn-danger:hover { background: var(--danger); color: #fff; }
+.btn-block { width: 100%; }
+.btn-sm { padding: 6px 11px; font-size: 12.5px; }
+.btn-lg { padding: 12px 20px; font-size: 15px; }
+
+.icon-btn {
+  width: 34px; height: 34px; padding: 0; border-radius: var(--radius-sm);
+  display: inline-flex; align-items: center; justify-content: center;
+  background: transparent; border: 1px solid transparent; color: var(--text-muted); cursor: pointer;
+  transition: background var(--dur) var(--ease), color var(--dur), transform var(--dur-fast) var(--ease);
+}
+.icon-btn:hover { background: var(--surface-2); color: var(--text); }
+.icon-btn:active { transform: scale(0.9); }
+.icon-btn svg { width: 18px; height: 18px; }
+
+/* ---------- Inputs ---------- */
+.field { display: flex; flex-direction: column; gap: 6px; }
+.field > label { font-size: 12px; font-weight: 600; color: var(--text-muted); }
+input[type="text"], input[type="number"], input[type="date"], input[type="search"], select, textarea {
+  font: inherit; font-size: 13.5px; color: var(--text);
+  background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-sm);
+  padding: 9px 11px; width: 100%; outline: none;
+  transition: border-color var(--dur) var(--ease), box-shadow var(--dur) var(--ease), background var(--dur);
+}
+textarea { resize: vertical; min-height: 64px; font-family: var(--font); }
+input:focus, select:focus, textarea:focus {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--accent-soft);
+}
+input::placeholder, textarea::placeholder { color: var(--text-faint); }
+select { appearance: none; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%238b94a2' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 11px center; padding-right: 30px; cursor: pointer; }
+
+/* ---------- Toggle switch ---------- */
+.switch { position: relative; display: inline-block; width: 42px; height: 24px; flex: none; }
+.switch input { opacity: 0; width: 0; height: 0; }
+.switch .track {
+  position: absolute; inset: 0; cursor: pointer; background: var(--border-strong);
+  border-radius: 999px; transition: background var(--dur) var(--ease);
+}
+.switch .track::before {
+  content: ""; position: absolute; height: 18px; width: 18px; left: 3px; top: 3px;
+  background: #fff; border-radius: 50%; box-shadow: var(--shadow-sm);
+  transition: transform var(--dur) var(--ease-spring);
+}
+.switch input:checked + .track { background: linear-gradient(135deg, var(--accent), var(--accent-strong)); }
+.switch input:checked + .track::before { transform: translateX(18px); }
+.switch input:focus-visible + .track { box-shadow: 0 0 0 3px var(--accent-soft); }
+
+/* ---------- Segmented control ---------- */
+.segment { display: inline-flex; background: var(--surface-2); border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 3px; gap: 2px; }
+.segment button {
+  font: inherit; font-size: 12.5px; font-weight: 600; color: var(--text-muted);
+  border: none; background: transparent; padding: 6px 12px; border-radius: 7px; cursor: pointer;
+  transition: color var(--dur), background var(--dur) var(--ease); position: relative;
+}
+.segment button[aria-pressed="true"] { color: var(--text); background: var(--surface); box-shadow: var(--shadow-sm); }
+
+/* ---------- Cards & chips ---------- */
+.card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); box-shadow: var(--shadow-sm); }
+.chip {
+  display: inline-flex; align-items: center; gap: 5px; font-size: 11.5px; font-weight: 600;
+  padding: 3px 9px; border-radius: var(--radius-pill); background: var(--surface-2); color: var(--text-muted);
+  border: 1px solid var(--border); white-space: nowrap;
+}
+.chip .dot { width: 7px; height: 7px; border-radius: 50%; background: var(--accent); flex: none; }
+
+.badge {
+  display: inline-flex; align-items: center; gap: 5px; font-size: 11px; font-weight: 700;
+  padding: 3px 9px; border-radius: var(--radius-pill); letter-spacing: 0.02em;
+}
+.badge-pro { background: linear-gradient(135deg, var(--accent), var(--accent-strong)); color: #fff; }
+.badge-trial { background: var(--accent-soft); color: var(--accent-strong); }
+.badge-free { background: var(--surface-2); color: var(--text-muted); border: 1px solid var(--border); }
+
+/* Pro lock badge + locked fields (shared by popup + options) */
+.lock { font-size: 9px; font-weight: 800; letter-spacing: 0.04em; padding: 2px 6px; border-radius: 5px; background: var(--accent-soft); color: var(--accent-strong); vertical-align: middle; }
+.field-locked { position: relative; cursor: pointer; }
+.field-locked input, .field-locked select { opacity: 0.55; pointer-events: none; }
+
+/* ---------- Sheet / modal ---------- */
+.sheet-backdrop {
+  position: fixed; inset: 0; background: rgba(8, 12, 18, 0.45); backdrop-filter: blur(2px);
+  display: flex; align-items: flex-end; justify-content: center; z-index: 100;
+  animation: backdropIn var(--dur) var(--ease) both;
+}
+.sheet {
+  background: var(--surface); width: 100%; border-radius: var(--radius-lg) var(--radius-lg) 0 0;
+  border-top: 1px solid var(--border); box-shadow: var(--shadow-lg);
+  padding: 18px; max-height: 92%; overflow-y: auto;
+  animation: sheetIn var(--dur-slow) var(--ease-spring) both;
+}
+.sheet h3 { font-size: 16px; margin-bottom: 14px; }
+.sheet-closing { animation: sheetOut var(--dur) var(--ease) both; }
+.backdrop-closing { animation: backdropOut var(--dur) var(--ease) both; }
+
+/* ---------- Toast ---------- */
+.toast-host { position: fixed; bottom: 14px; left: 0; right: 0; display: flex; justify-content: center; z-index: 200; pointer-events: none; }
+.toast {
+  pointer-events: auto; background: var(--text); color: var(--bg);
+  padding: 10px 16px; border-radius: var(--radius-pill); font-size: 13px; font-weight: 600;
+  box-shadow: var(--shadow-lg); display: flex; align-items: center; gap: 9px;
+  animation: toastIn var(--dur-slow) var(--ease-spring) both;
+}
+.toast.out { animation: toastOut var(--dur) var(--ease) both; }
+
+/* ---------- Skeleton ---------- */
+.skeleton { background: linear-gradient(100deg, var(--surface-2) 30%, var(--surface-3) 50%, var(--surface-2) 70%); background-size: 200% 100%; animation: shimmer 1.3s ease-in-out infinite; border-radius: var(--radius-sm); }
+
+/* ---------- Entrance helpers ---------- */
+.enter { animation: slideUp var(--dur-slow) var(--ease) both; }
+.pop { animation: popIn var(--dur) var(--ease-spring) both; }
+.fade { animation: fadeIn var(--dur) var(--ease) both; }
+
+/* ---------- Keyframes ---------- */
+@keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+@keyframes slideUp { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: none; } }
+@keyframes popIn { from { opacity: 0; transform: scale(0.92); } to { opacity: 1; transform: none; } }
+@keyframes shimmer { from { background-position: 200% 0; } to { background-position: -200% 0; } }
+@keyframes backdropIn { from { opacity: 0; } to { opacity: 1; } }
+@keyframes backdropOut { from { opacity: 1; } to { opacity: 0; } }
+@keyframes sheetIn { from { transform: translateY(100%); } to { transform: none; } }
+@keyframes sheetOut { from { transform: none; } to { transform: translateY(100%); } }
+@keyframes toastIn { from { opacity: 0; transform: translateY(20px) scale(0.96); } to { opacity: 1; transform: none; } }
+@keyframes toastOut { from { opacity: 1; transform: none; } to { opacity: 0; transform: translateY(14px); } }
+@keyframes spin { to { transform: rotate(360deg); } }
+@keyframes ring { 0% { box-shadow: 0 0 0 0 var(--accent-soft); } 100% { box-shadow: 0 0 0 12px transparent; } }
+
+.spin { animation: spin 0.8s linear infinite; }

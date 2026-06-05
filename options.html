@@ -1,0 +1,204 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Glean — Settings</title>
+  <link rel="stylesheet" href="styles/tokens.css" />
+  <link rel="stylesheet" href="styles/base.css" />
+  <style>
+    body { padding: 0 20px 60px; }
+    /* leave room for the sticky topbar when jumping to #welcome (and other anchors) */
+    html { scroll-padding-top: 88px; }
+    .topbar { position: sticky; top: 0; z-index: 10; display: flex; align-items: center; gap: 11px; padding: 16px 0; background: var(--bg); border-bottom: 1px solid var(--border); margin-bottom: 22px; }
+    .topbar img { width: 30px; height: 30px; border-radius: 8px; }
+    .topbar .title { font-size: 18px; font-weight: 800; letter-spacing: -0.02em; }
+    .wrap { max-width: 680px; margin: 0 auto; display: flex; flex-direction: column; gap: 18px; }
+
+    .welcome { padding: 18px 20px; border-radius: var(--radius-lg); background: linear-gradient(135deg, var(--accent), var(--accent-strong)); color: #fff; box-shadow: var(--shadow-md); }
+    .welcome h2 { font-size: 19px; margin-bottom: 4px; }
+    .welcome p { opacity: 0.92; font-size: 13.5px; }
+
+    .section { padding: 6px 20px 14px; }
+    .section > h2 { font-size: 13px; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-faint); padding: 14px 0 4px; }
+    .row { display: flex; align-items: center; justify-content: space-between; gap: 18px; padding: 14px 0; border-top: 1px solid var(--border); }
+    .row:first-of-type { border-top: none; }
+    .row-main { min-width: 0; }
+    .row-label { font-weight: 600; font-size: 14px; }
+    .row-desc { font-size: 12px; color: var(--text-muted); margin-top: 2px; }
+    .row-control { flex: none; display: flex; align-items: center; gap: 10px; }
+    .row-control select { width: 180px; }
+
+    .swatches { display: flex; gap: 9px; align-items: center; }
+    .swatch { width: 26px; height: 26px; border-radius: 50%; cursor: pointer; border: 2px solid var(--surface); box-shadow: 0 0 0 1px var(--border); transition: transform var(--dur-fast) var(--ease-spring), box-shadow var(--dur); }
+    .swatch:hover { transform: scale(1.12); }
+    .swatch[aria-pressed="true"] { box-shadow: 0 0 0 2px var(--surface), 0 0 0 4px var(--accent); }
+    .swatch.custom { display: grid; place-items: center; background: conic-gradient(from 0deg, #ef4444, #f59e0b, #22c55e, #0ea5e9, #6366f1, #ec4899, #ef4444); position: relative; overflow: hidden; }
+    .swatch.custom input { position: absolute; inset: 0; opacity: 0; cursor: pointer; }
+
+    .cat-row { display: flex; align-items: center; gap: 10px; padding: 9px 0; }
+    .cat-row input[type="color"] { width: 30px; height: 30px; padding: 0; border: none; background: none; border-radius: 8px; cursor: pointer; flex: none; }
+    .cat-row input[type="text"] { flex: 1; }
+    .cat-row .del { color: var(--text-faint); }
+
+    .plan-status { display: flex; align-items: center; gap: 12px; padding: 14px; border-radius: var(--radius); background: var(--surface-2); margin-bottom: 14px; }
+    .plan-status .pi { font-size: 26px; }
+    .plan-cards { display: flex; gap: 12px; }
+    .plan-card { flex: 1; padding: 16px; cursor: pointer; position: relative; text-align: left; transition: transform var(--dur) var(--ease-spring), border-color var(--dur), box-shadow var(--dur); }
+    .plan-card:hover { transform: translateY(-2px); box-shadow: var(--shadow-md); }
+    .plan-card.featured { border-color: var(--accent); }
+    .plan-card .price { font-size: 24px; font-weight: 800; letter-spacing: -0.02em; }
+    .plan-card .price span { font-size: 13px; font-weight: 600; color: var(--text-muted); }
+    .plan-card .pnote { font-size: 12px; color: var(--text-muted); margin-top: 3px; }
+    .featured-tag { position: absolute; top: -10px; right: 14px; }
+
+    .data-actions { display: flex; flex-wrap: wrap; gap: 9px; }
+    .about { text-align: center; color: var(--text-muted); font-size: 12.5px; padding: 18px 0; }
+    .about .lock-note { display: inline-flex; align-items: center; gap: 6px; margin-top: 8px; padding: 6px 11px; border-radius: 999px; background: var(--surface-2); }
+    .pro-only { opacity: 0.55; }
+    /* staggered entrance for settings sections */
+    .wrap > * { animation: optRise .5s cubic-bezier(.22, .61, .36, 1) both; }
+    .wrap > *:nth-child(2) { animation-delay: .04s; }
+    .wrap > *:nth-child(3) { animation-delay: .09s; }
+    .wrap > *:nth-child(4) { animation-delay: .14s; }
+    .wrap > *:nth-child(5) { animation-delay: .19s; }
+    .wrap > *:nth-child(6) { animation-delay: .24s; }
+    .wrap > *:nth-child(7) { animation-delay: .29s; }
+    .wrap > *:nth-child(8) { animation-delay: .34s; }
+    @keyframes optRise { from { opacity: 0; transform: translateY(14px); } to { opacity: 1; transform: none; } }
+  </style>
+</head>
+<body>
+  <div class="topbar">
+    <img src="icons/logo.svg" alt="Glean" />
+    <span class="title">Glean</span>
+    <span class="spacer"></span>
+    <span id="planBadge" class="badge badge-trial">Trial</span>
+  </div>
+
+  <div class="wrap">
+    <div class="welcome hidden" id="welcome">
+      <h2>Welcome to Glean <svg viewBox="0 0 24 24" width="0.85em" height="0.85em" fill="currentColor" style="vertical-align:-0.05em"><path d="M12 2c.45 3.9 2.6 6.05 6.5 6.5-3.9.45-6.05 2.6-6.5 6.5-.45-3.9-2.6-6.05-6.5-6.5C9.4 8.05 11.55 5.9 12 2z"/></svg></h2>
+      <p>You're on the <b>Free plan</b> — capture receipts and export basic CSV. Start a <b>3-day free trial</b> of Pro any time to unlock inbox sync, AI receipt scan and one-click accounting exports.</p>
+    </div>
+
+    <!-- PLAN -->
+    <section class="section card">
+      <h2>Plan</h2>
+      <div id="planBox"></div>
+    </section>
+
+    <!-- ACCOUNT -->
+    <section class="section card">
+      <h2>Account</h2>
+      <div class="row" style="border-top:none">
+        <div class="row-main"><div class="row-label" id="acc-name">Not signed in</div><div class="row-desc" id="acc-email">Sign in from the Glean popup to use Glean.</div></div>
+        <div class="row-control"><button class="btn btn-ghost" id="acc-signout" hidden>Sign out</button></div>
+      </div>
+    </section>
+
+    <!-- APPEARANCE -->
+    <section class="section card">
+      <h2>Appearance</h2>
+      <div class="row">
+        <div class="row-main"><div class="row-label">Theme</div><div class="row-desc">Match your system or pick a side.</div></div>
+        <div class="row-control"><div class="segment" id="seg-theme">
+          <button data-v="system">System</button><button data-v="light">Light</button><button data-v="dark">Dark</button>
+        </div></div>
+      </div>
+      <div class="row">
+        <div class="row-main"><div class="row-label">Accent color</div><div class="row-desc">Used across buttons, highlights and your icon.</div></div>
+        <div class="row-control"><div class="swatches" id="swatches"></div></div>
+      </div>
+      <div class="row">
+        <div class="row-main"><div class="row-label">Animations</div><div class="row-desc">Full motion, reduced, or off entirely.</div></div>
+        <div class="row-control"><div class="segment" id="seg-anim">
+          <button data-v="full">Full</button><button data-v="reduced">Reduced</button><button data-v="off">Off</button>
+        </div></div>
+      </div>
+      <div class="row">
+        <div class="row-main"><div class="row-label">Density</div><div class="row-desc">Comfortable spacing or compact lists.</div></div>
+        <div class="row-control"><div class="segment" id="seg-density">
+          <button data-v="comfortable">Comfortable</button><button data-v="compact">Compact</button>
+        </div></div>
+      </div>
+    </section>
+
+    <!-- MONEY -->
+    <section class="section card">
+      <h2>Money</h2>
+      <div class="row">
+        <div class="row-main"><div class="row-label">Default currency</div><div class="row-desc">New receipts use this unless detected otherwise.</div></div>
+        <div class="row-control"><select id="sel-currency"></select></div>
+      </div>
+      <div class="row">
+        <div class="row-main"><div class="row-label">Date format</div><div class="row-desc">How dates appear in your ledger.</div></div>
+        <div class="row-control"><select id="sel-date">
+          <option value="medium">Jun 4, 2026</option><option value="short">6/4/26</option><option value="iso">2026-06-04</option>
+        </select></div>
+      </div>
+    </section>
+
+    <!-- CATEGORIES -->
+    <section class="section card">
+      <h2>Categories <span class="lock" id="cat-lock" hidden>PRO</span></h2>
+      <div class="row-desc" style="padding:4px 0 10px">Rename, recolor, or add categories. Used to tag and total your spend.</div>
+      <div id="catList"></div>
+      <div class="row" style="border-top:1px solid var(--border)">
+        <button class="btn btn-ghost btn-sm" id="catAdd">＋ Add category</button>
+        <button class="btn btn-ghost btn-sm" id="catReset">Reset to defaults</button>
+      </div>
+    </section>
+
+    <!-- CAPTURE -->
+    <section class="section card">
+      <h2>Capture</h2>
+      <div class="row">
+        <div class="row-main"><div class="row-label">Auto-capture <span class="lock">PRO</span></div><div class="row-desc">Show a one-click prompt when Glean spots a receipt on a page.</div></div>
+        <div class="row-control"><label class="switch"><input type="checkbox" id="tg-auto"><span class="track"></span></label></div>
+      </div>
+      <div class="row">
+        <div class="row-main"><div class="row-label">Capture confirmations</div><div class="row-desc">Show a small toast when something is captured.</div></div>
+        <div class="row-control"><label class="switch"><input type="checkbox" id="tg-toast"><span class="track"></span></label></div>
+      </div>
+      <div class="row">
+        <div class="row-main"><div class="row-label">Never scan these sites <span class="lock">PRO</span></div><div class="row-desc">One hostname per line (e.g. mail.google.com).</div></div>
+        <div class="row-control" style="flex:1;max-width:260px"><textarea id="ta-block" placeholder="bank.com&#10;mail.google.com"></textarea></div>
+      </div>
+    </section>
+
+    <!-- AI SCANNING -->
+    <section class="section card">
+      <h2>AI receipt scanning <span class="lock">PRO</span></h2>
+      <div class="row-desc" style="padding:6px 0 0">
+        Snap or upload a photo of any receipt and Glean's AI reads the merchant, amount, date and category — you just confirm. Tap <b>“Scan a receipt with AI”</b> on the home screen. Nothing to set up.
+      </div>
+    </section>
+
+    <!-- DATA -->
+    <section class="section card">
+      <h2>Your data</h2>
+      <div class="row-desc" style="padding:4px 0 12px"><svg viewBox="0 0 24 24" width="1em" height="1em" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-0.16em"><rect x="4.5" y="11" width="15" height="9" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg> Everything stays on this device. Glean never uploads your receipts.</div>
+      <div class="data-actions">
+        <button class="btn btn-ghost" id="exp-csv">Export CSV</button>
+        <button class="btn btn-ghost" id="exp-acc">Export for accounting</button>
+        <button class="btn btn-ghost" id="exp-json">Backup (JSON)</button>
+        <button class="btn btn-ghost" id="imp-json">Import backup</button>
+        <input type="file" id="imp-file" accept="application/json" hidden />
+        <span class="spacer"></span>
+        <button class="btn btn-danger" id="clear-all">Delete all</button>
+      </div>
+    </section>
+
+    <div class="about">
+      <div>Glean v1.0.0 · Local-first receipt & expense harvester</div>
+      <div class="lock-note"><svg viewBox="0 0 24 24" width="1em" height="1em" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4.5" y="11" width="15" height="9" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg> Your data never leaves your browser</div>
+    </div>
+  </div>
+
+  <div id="sheetHost"></div>
+  <div class="toast-host" id="toastHost"></div>
+
+  <script type="module" src="options.js"></script>
+</body>
+</html>
