@@ -7,10 +7,29 @@
 // never in the extension. Cost is ~$0.0002 per scan (pay-as-you-go on your Google billing).
 
 const MODEL = "gemini-2.0-flash";
-const VALID = ["software", "advertising", "travel", "meals", "office", "hardware", "fees", "education", "utilities", "other"];
-const PROMPT = `You are a precise receipt parser. Read the receipt in the image and reply with ONLY compact JSON (no prose, no markdown) using exactly these keys:
-{"merchant": string, "amount": number, "currency": string (ISO 4217 like USD), "date": string (YYYY-MM-DD), "category": one of ${JSON.stringify(VALID)}, "confidence": number between 0 and 1}
-"amount" is the grand total actually paid. "category" is your best classification of what was purchased. If a field is unreadable, give your best guess.`;
+
+const DEFAULT_CATS = [
+  { id: "software", name: "Software & SaaS" }, { id: "advertising", name: "Advertising" },
+  { id: "travel", name: "Travel" }, { id: "meals", name: "Meals & Entertainment" },
+  { id: "office", name: "Office & Supplies" }, { id: "hardware", name: "Hardware & Equipment" },
+  { id: "fees", name: "Fees & Banking" }, { id: "education", name: "Education" },
+  { id: "utilities", name: "Utilities & Internet" }, { id: "other", name: "Other" },
+];
+
+// Build the parser prompt so the AI classifies into the caller's OWN categories (by id).
+function buildPrompt(categories) {
+  let cats = (Array.isArray(categories) ? categories : [])
+    .filter((c) => c && c.id)
+    .map((c) => ({ id: String(c.id), name: String(c.name || c.id) }));
+  if (!cats.length) cats = DEFAULT_CATS;
+  if (!cats.some((c) => c.id === "other")) cats.push({ id: "other", name: "Other" });
+  const choices = cats.map((c) => `"${c.id}" = ${c.name}`).join(", ");
+  return `You are a precise receipt parser. Read the receipt in the image and reply with ONLY compact JSON (no prose, no markdown) using exactly these keys:
+{"merchant": string, "amount": number, "currency": string (ISO 4217 like USD), "date": string (YYYY-MM-DD), "category": string, "confidence": number between 0 and 1}
+"amount" is the grand total actually paid.
+"category" MUST be exactly one of these ids based on what was purchased: ${choices}. Pick the single best fit; use "other" only if nothing matches.
+If a field is unreadable, give your best guess.`;
+}
 
 export default {
   async fetch(request, env) {
@@ -28,7 +47,7 @@ export default {
 
     let body;
     try { body = await request.json(); } catch { return json({ error: "bad json" }, 400, cors); }
-    const { base64, mimeType } = body || {};
+    const { base64, mimeType, categories } = body || {};
     if (!base64) return json({ error: "no image" }, 400, cors);
 
     let r;
@@ -37,14 +56,18 @@ export default {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          contents: [{ parts: [{ text: PROMPT }, { inline_data: { mime_type: mimeType || "image/jpeg", data: base64 } }] }],
+          contents: [{ parts: [{ text: buildPrompt(categories) }, { inline_data: { mime_type: mimeType || "image/jpeg", data: base64 } }] }],
           generationConfig: { temperature: 0, responseMimeType: "application/json" },
         }),
       });
     } catch {
       return json({ error: "upstream network" }, 502, cors);
     }
-    if (!r.ok) return json({ error: "gemini", status: r.status }, 502, cors);
+    if (!r.ok) {
+      let detail = "";
+      try { detail = (await r.json())?.error?.message || ""; } catch { /* ignore */ }
+      return json({ error: "gemini", status: r.status, detail: detail.slice(0, 300) }, 502, cors);
+    }
 
     const data = await r.json().catch(() => null);
     const text = data?.candidates?.[0]?.content?.parts?.[0]?.text || "{}";

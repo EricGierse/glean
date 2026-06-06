@@ -28,6 +28,7 @@ async function init() {
   wire();
   onChanged(debounce(refresh, 100));
   matchMedia("(prefers-color-scheme: dark)").addEventListener("change", () => settings.theme === "system" && applyAppearance(settings));
+  maybeShowUpsellPopup();
 }
 
 /* ---------- Auth gate ---------- */
@@ -226,7 +227,7 @@ async function scanFlow(targetNode) {
   const scanning = openScanning();
   try {
     const { base64, mimeType } = await fileToBase64(file);
-    const res = await scanReceipt({ base64, mimeType, apiKey: settings.geminiApiKey });
+    const res = await scanReceipt({ base64, mimeType, apiKey: settings.geminiApiKey, categories: settings.categories });
     scanning.close();
     if (!res.ok) return toast(scanErrorMessage(res));
     if (targetNode && document.body.contains(targetNode)) fillSheet(targetNode, res.receipt);
@@ -402,6 +403,74 @@ function openUpsell(reason) {
     if (res.ok) { close(); toast("Pro unlocked 🎉"); refresh(); }
     else toast(res.error || "Invalid key");
   };
+}
+
+/* ---------- Timed Pro promo popup ---------- */
+// Shows an illustrated upgrade popup to Free users "from time to time" — never on the
+// very first open, then at most once every few days so it informs without nagging.
+const UPSELL_META_KEY = "glean_upsell_meta";
+const UPSELL_GAP_MS = 3 * 86400000; // at most once every 3 days
+
+async function maybeShowUpsellPopup() {
+  if (ent.tier === "pro") return;
+  let meta = {};
+  try { meta = (await chrome.storage.local.get(UPSELL_META_KEY))[UPSELL_META_KEY] || {}; } catch { return; }
+  const opens = (meta.opens || 0) + 1;
+  const now = Date.now();
+  const due = opens >= 2 && (!meta.lastShown || now - meta.lastShown > UPSELL_GAP_MS);
+  try { await chrome.storage.local.set({ [UPSELL_META_KEY]: { opens, lastShown: due ? now : (meta.lastShown || 0) } }); } catch { /* ignore */ }
+  if (due) setTimeout(() => { if (!document.querySelector(".sheet-backdrop")) showProPopup(); }, 700);
+}
+
+function showProPopup() {
+  if (ent.tier === "pro") return;
+  const m = PRICING.monthly, y = PRICING.yearly;
+  const feat = (ic, t) => `<li><span class="pf-ic">${ic}</span><span>${t}</span></li>`;
+  const node = el("div", { class: "promo" });
+  node.innerHTML = `
+    <div class="promo-hero">
+      <span class="promo-spark s1">${ICONS.sparkle}</span>
+      <span class="promo-spark s2">${ICONS.sparkle}</span>
+      <span class="promo-spark s3">${ICONS.sparkle}</span>
+      <div class="promo-crown">${ICONS.crown}</div>
+      <div class="promo-word">Glean <b>Pro</b></div>
+      <div class="promo-tag">Your receipts, on autopilot</div>
+    </div>
+    <h3 class="promo-h">Unlock everything Glean can do</h3>
+    <ul class="promo-feats">
+      ${feat(ICONS.scan, "<b>AI receipt scan</b> — snap a photo, done")}
+      ${feat(ICONS.check, "Inbox sync — Gmail, Outlook &amp; Apple Mail")}
+      ${feat(ICONS.zap, "Auto-capture receipts as you browse")}
+      ${feat(ICONS.chart, "Unlimited CSV / QuickBooks / JSON export")}
+      ${feat(ICONS.archive, "Custom categories, tax &amp; multi-currency")}
+    </ul>
+    <div class="promo-cards">
+      <button class="promo-card" id="pp-year" type="button">
+        <span class="badge badge-pro promo-tagpill">${ICONS.crown} ${y.badge}</span>
+        <div class="promo-price">$${y.price}<span>/yr</span></div>
+        <div class="promo-note">3 days free · ≈ $${(y.price / 12).toFixed(2)}/mo</div>
+      </button>
+      <button class="promo-card" id="pp-month" type="button">
+        <div class="promo-price">$${m.price}<span>/mo</span></div>
+        <div class="promo-note">3 days free</div>
+      </button>
+    </div>
+    <button class="btn btn-primary btn-block btn-lg" id="pp-start">${ICONS.sparkle} Start 3-day free trial</button>
+    <div class="promo-foot">
+      <a id="pp-key">Have a license key?</a>
+      <a id="pp-later">Maybe later</a>
+    </div>`;
+  const { close } = mountSheet(node);
+
+  let plan = "yearly";
+  const cards = { yearly: node.querySelector("#pp-year"), monthly: node.querySelector("#pp-month") };
+  const selPlan = (p) => { plan = p; cards.yearly.classList.toggle("on", p === "yearly"); cards.monthly.classList.toggle("on", p === "monthly"); };
+  selPlan("yearly");
+  cards.yearly.onclick = () => selPlan("yearly");
+  cards.monthly.onclick = () => selPlan("monthly");
+  node.querySelector("#pp-start").onclick = () => chrome.tabs.create({ url: `${CHECKOUT_URL}?plan=${plan}` });
+  node.querySelector("#pp-key").onclick = () => { close(); setTimeout(() => openUpsell(), 230); };
+  node.querySelector("#pp-later").onclick = close;
 }
 
 /* ---------- Toast ---------- */

@@ -3,6 +3,10 @@
    from the user's chosen accent color. Everything else themes via [data-theme]. */
 
 :root {
+  /* Render native controls (date/number spinners, selects, scrollbars) in light mode
+     so typed numbers & menus stay legible. [data-theme=dark] flips this below. */
+  color-scheme: light;
+
   /* Accent (overridden live by settings; emerald is the default brand color) */
   --accent: #10b981;
   --accent-strong: #059669;
@@ -46,6 +50,10 @@
 }
 
 [data-theme="dark"] {
+  /* Flip native controls to dark — fixes black/illegible numbers in date & number
+     inputs and <select> menus on the Settings / Plan screens in dark mode. */
+  color-scheme: dark;
+
   --bg: #0c0f14;
   --bg-grad: radial-gradient(1200px 600px at 100% -10%, var(--accent-soft), transparent 55%);
   --surface: #151a21;
