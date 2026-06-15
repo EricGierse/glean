@@ -6,7 +6,7 @@ import { categoryById } from "./lib/categories.js";
 import { toCSV, toAccountingCSV, toJSON, download, stamp } from "./lib/csv.js";
 import { ICONS } from "./lib/icons.js";
 import { scanReceipt, fileToBase64, scanErrorMessage } from "./lib/scan.js";
-import { getSession, signInWithGoogle, signInWithApple, signInWithEmail } from "./lib/auth.js";
+import { getSession, signInWithGoogle, signInWithApple, requestEmailCode, verifyEmailCode } from "./lib/auth.js";
 
 const CURRENCIES = ["USD", "EUR", "GBP", "BRL", "JPY", "CAD", "AUD", "INR", "CHF", "MXN"];
 
@@ -36,20 +36,69 @@ function showAuth() {
   $("#authView").classList.remove("hidden");
   $("#app").classList.add("hidden");
   let mode = "signup";
-  const apply = () => {
+  let pending = null; // { email, exp, sig, demo } between the email step and the code step
+
+  const applyMode = () => {
     $("#authTitle").textContent = mode === "signup" ? "Create your account" : "Welcome back";
     $("#authSub").textContent = mode === "signup" ? "Sign up to start capturing receipts." : "Log in to your Glean account.";
     $("#authToggleText").textContent = mode === "signup" ? "Already have an account?" : "New to Glean?";
     $("#authToggle").textContent = mode === "signup" ? "Log in" : "Create one";
-    $("#authEmailBtn").textContent = mode === "signup" ? "Sign up with email" : "Log in with email";
   };
-  apply();
-  $("#authToggle").onclick = () => { mode = mode === "signup" ? "login" : "signup"; apply(); };
-  const busy = (btn, fn) => async () => { btn.disabled = true; try { const r = await fn(); if (r?.ok) location.reload(); else if (r?.error) toast(r.error); } finally { btn.disabled = false; } };
-  $("#authGoogle").onclick = busy($("#authGoogle"), signInWithGoogle);
-  $("#authApple").onclick = busy($("#authApple"), signInWithApple);
-  $("#authEmailBtn").onclick = busy($("#authEmailBtn"), () => signInWithEmail($("#authEmail").value));
-  $("#authEmail").addEventListener("keydown", (e) => { if (e.key === "Enter") $("#authEmailBtn").click(); });
+  applyMode();
+  $("#authToggle").onclick = () => { mode = mode === "signup" ? "login" : "signup"; applyMode(); };
+
+  const showPanel = (which) => {
+    $("#authMain").classList.toggle("hidden", which !== "main");
+    $("#authCode").classList.toggle("hidden", which !== "code");
+  };
+
+  // OAuth providers (reload on success so init() finds the new session)
+  const oauth = (btn, fn) => async () => {
+    btn.disabled = true;
+    try { const r = await fn(); if (r?.ok) location.reload(); else if (r?.error) toast(r.error); }
+    finally { btn.disabled = false; }
+  };
+  $("#authGoogle").onclick = oauth($("#authGoogle"), signInWithGoogle);
+  $("#authApple").onclick = oauth($("#authApple"), signInWithApple);
+
+  // Email — step 1: send a code
+  const sendCode = async () => {
+    const btn = $("#authEmailBtn"); btn.disabled = true;
+    try {
+      const r = await requestEmailCode($("#authEmail").value);
+      if (!r.ok) return toast(r.error);
+      pending = { email: r.email, exp: r.exp, sig: r.sig, demo: r.demo };
+      $("#codeEmail").textContent = r.email;
+      $("#codeInput").value = "";
+      const dev = $("#codeDev");
+      if (r.devCode) { dev.textContent = `Testing mode — your code is ${r.devCode}`; dev.classList.remove("hidden"); }
+      else if (r.demo) { dev.textContent = "Demo mode — enter any 6 digits to continue"; dev.classList.remove("hidden"); }
+      else if (r.emailed === false) { dev.textContent = "Email sending isn't set up yet — enter any 6 digits"; dev.classList.remove("hidden"); pending.demo = true; }
+      else { dev.classList.add("hidden"); }
+      showPanel("code");
+      setTimeout(() => $("#codeInput").focus(), 60);
+    } finally { btn.disabled = false; }
+  };
+  $("#authEmailBtn").onclick = sendCode;
+  $("#authEmail").addEventListener("keydown", (e) => { if (e.key === "Enter") sendCode(); });
+
+  // Email — step 2: verify the code
+  const verify = async () => {
+    const btn = $("#codeVerify"); btn.disabled = true;
+    try {
+      const r = await verifyEmailCode({ ...pending, code: $("#codeInput").value });
+      if (r.ok) location.reload(); else toast(r.error);
+    } finally { btn.disabled = false; }
+  };
+  $("#codeVerify").onclick = verify;
+  $("#codeInput").addEventListener("input", (e) => {
+    e.target.value = e.target.value.replace(/\D/g, "").slice(0, 6);
+    if (e.target.value.length === 6) verify(); // auto-submit when complete
+  });
+  $("#codeInput").addEventListener("keydown", (e) => { if (e.key === "Enter") verify(); });
+  $("#codeResend").onclick = sendCode;
+  $("#codeChange").onclick = () => showPanel("main");
+  $("#codeBack").onclick = () => showPanel("main");
 }
 
 async function refresh() {

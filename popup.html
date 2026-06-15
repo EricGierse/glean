@@ -138,6 +138,16 @@
     .auth-toggle a { cursor: pointer; font-weight: 700; color: var(--accent-strong); }
     .auth-toggle a:hover { text-decoration: underline; }
     .auth-legal { text-align: center; font-size: 11px; color: var(--text-faint); margin-top: 14px; line-height: 1.4; }
+    /* Email verification code step */
+    .auth-back { background: none; border: none; color: var(--text-muted); font: inherit; font-size: 12.5px; font-weight: 600; cursor: pointer; padding: 4px 0; margin-bottom: 6px; display: inline-flex; align-items: center; gap: 5px; transition: color var(--dur); }
+    .auth-back:hover { color: var(--text); }
+    .code-input { text-align: center; font-family: var(--font-num); font-size: 27px; font-weight: 800; letter-spacing: 12px; padding: 15px 10px; margin: 6px 0 4px; text-indent: 12px; }
+    .code-row { display: flex; align-items: center; justify-content: space-between; margin-top: 15px; font-size: 12.5px; }
+    .code-row a { cursor: pointer; color: var(--accent-strong); font-weight: 600; }
+    .code-row a:hover { text-decoration: underline; }
+    .auth-devhint { margin-top: 15px; font-size: 12px; padding: 10px 12px; border-radius: var(--radius-sm); background: var(--accent-soft); color: var(--accent-strong); text-align: center; font-weight: 600; }
+    .auth-card { animation: authPanel var(--dur) var(--ease) both; }
+    @keyframes authPanel { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
 
     .sheet .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 11px; }
     .sheet .field { margin-bottom: 12px; }
@@ -259,7 +269,7 @@
 
   <div id="authView" class="auth hidden">
     <div class="auth-brand"><img src="icons/logo.svg" alt="" /><span>Glean</span></div>
-    <div class="auth-card">
+    <div class="auth-card" id="authMain">
       <h2 id="authTitle">Create your account</h2>
       <p id="authSub">Sign up to start capturing receipts.</p>
       <button class="auth-btn" id="authGoogle"><svg width="18" height="18" viewBox="0 0 24 24"><path fill="#4285F4" d="M23.5 12.3c0-.8-.1-1.6-.2-2.3H12v4.5h6.5c-.3 1.5-1.1 2.7-2.4 3.6v3h3.9c2.3-2.1 3.6-5.2 3.6-8.8z"/><path fill="#34A853" d="M12 24c3.2 0 6-1.1 7.9-2.9l-3.9-3c-1.1.7-2.5 1.2-4 1.2-3.1 0-5.7-2.1-6.6-4.9H1.4v3.1C3.3 21.3 7.3 24 12 24z"/><path fill="#FBBC05" d="M5.4 14.4c-.2-.7-.4-1.4-.4-2.4s.1-1.7.4-2.4V6.5H1.4C.5 8.2 0 10 0 12s.5 3.8 1.4 5.5l4-3.1z"/><path fill="#EA4335" d="M12 4.8c1.8 0 3.4.6 4.6 1.8l3.4-3.4C17.9 1.2 15.2 0 12 0 7.3 0 3.3 2.7 1.4 6.5l4 3.1C6.3 6.9 8.9 4.8 12 4.8z"/></svg> Continue with Google</button>
@@ -267,10 +277,23 @@
       <div class="auth-or"><span>or</span></div>
       <div class="auth-email">
         <input id="authEmail" type="email" placeholder="you@email.com" autocomplete="email" />
-        <button class="btn btn-primary btn-block" id="authEmailBtn">Sign up with email</button>
+        <button class="btn btn-primary btn-block" id="authEmailBtn">Continue with email</button>
       </div>
       <p class="auth-toggle"><span id="authToggleText">Already have an account?</span> <a id="authToggle">Log in</a></p>
       <p class="auth-legal">By continuing you agree to Glean's Terms &amp; Privacy Policy.</p>
+    </div>
+
+    <div class="auth-card hidden" id="authCode">
+      <button class="auth-back" id="codeBack" type="button"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg> Back</button>
+      <h2>Check your email</h2>
+      <p>We sent a 6-digit code to <b id="codeEmail">you@email.com</b>.</p>
+      <input id="codeInput" class="code-input" type="text" inputmode="numeric" autocomplete="one-time-code" maxlength="6" placeholder="------" aria-label="Verification code" />
+      <button class="btn btn-primary btn-block" id="codeVerify">Verify &amp; continue</button>
+      <div class="code-row">
+        <a id="codeResend">Resend code</a>
+        <a id="codeChange">Use a different email</a>
+      </div>
+      <div class="auth-devhint hidden" id="codeDev"></div>
     </div>
   </div>
 
