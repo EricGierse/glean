@@ -6,7 +6,7 @@ import { categoryById } from "./lib/categories.js";
 import { toCSV, toAccountingCSV, toJSON, download, stamp } from "./lib/csv.js";
 import { ICONS } from "./lib/icons.js";
 import { scanReceipt, fileToBase64, scanErrorMessage } from "./lib/scan.js";
-import { getSession, signInWithGoogle, signInWithApple, requestEmailCode, verifyEmailCode } from "./lib/auth.js";
+import { getSession, signInWithGoogle, requestEmailCode, verifyEmailCode } from "./lib/auth.js";
 
 const CURRENCIES = ["USD", "EUR", "GBP", "BRL", "JPY", "CAD", "AUD", "INR", "CHF", "MXN"];
 
@@ -59,7 +59,6 @@ function showAuth() {
     finally { btn.disabled = false; }
   };
   $("#authGoogle").onclick = oauth($("#authGoogle"), signInWithGoogle);
-  $("#authApple").onclick = oauth($("#authApple"), signInWithApple);
 
   // Email — step 1: send a code
   const sendCode = async () => {
@@ -84,10 +83,12 @@ function showAuth() {
 
   // Email — step 2: verify the code
   const verify = async () => {
-    const btn = $("#codeVerify"); btn.disabled = true;
+    const btn = $("#codeVerify"), input = $("#codeInput"); btn.disabled = true;
     try {
-      const r = await verifyEmailCode({ ...pending, code: $("#codeInput").value });
-      if (r.ok) location.reload(); else toast(r.error);
+      const r = await verifyEmailCode({ ...pending, code: input.value });
+      if (r.ok) { location.reload(); return; }
+      toast(r.error);
+      input.value = ""; input.classList.remove("shake"); void input.offsetWidth; input.classList.add("shake"); input.focus();
     } finally { btn.disabled = false; }
   };
   $("#codeVerify").onclick = verify;
