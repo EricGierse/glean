@@ -1,10 +1,11 @@
 // Glean — popup controller
 import { $, el, formatMoney, relativeDay, todayISO, animateCount, stagger, debounce, applyAccent, escapeHtml } from "./lib/util.js";
-import { getSettings, getReceipts, addReceipt, updateReceipt, deleteReceipt, getLicense, computeStats, onChanged } from "./lib/store.js";
+import { getSettings, saveSettings, getReceipts, addReceipt, updateReceipt, deleteReceipt, getLicense, computeStats, onChanged } from "./lib/store.js";
 import { getEntitlements, activateKey, PRICING, CHECKOUT_URL } from "./lib/license.js";
 import { categoryById } from "./lib/categories.js";
 import { toCSV, toAccountingCSV, toJSON, download, stamp } from "./lib/csv.js";
 import { ICONS } from "./lib/icons.js";
+import { computeStreak, findDuplicates, parseAmountQuery, monthlySeries, categoryBreakdown, topCategories, barChartSVG, donutSVG } from "./lib/insights.js";
 import { scanReceipt, fileToBase64, scanErrorMessage } from "./lib/scan.js";
 import { getSession, signInWithGoogle, requestEmailCode, verifyEmailCode } from "./lib/auth.js";
 
@@ -147,14 +148,25 @@ function renderStats() {
     top.hidden = false;
     top.innerHTML = `<span class="dot" style="background:${cat.color}"></span>${escapeHtml(cat.name)}`;
   } else top.hidden = true;
+
+  const streak = computeStreak(receipts);
+  const chip = $("#streakChip");
+  if (streak.current >= 2) {
+    chip.classList.remove("hidden");
+    chip.innerHTML = `${ICONS.flame} ${streak.current}-day streak`;
+  } else chip.classList.add("hidden");
 }
 
 function applyFilter(list) {
+  const amt = filter.q ? parseAmountQuery(filter.q) : null; // ">50", "10-40", "under 20"
   return list.filter((r) => {
     if (filter.cat && r.category !== filter.cat) return false;
     if (filter.q) {
-      const hay = `${r.merchant} ${r.note} ${r.url}`.toLowerCase();
-      if (!hay.includes(filter.q.toLowerCase())) return false;
+      if (amt) { if (!amt.test(Number(r.amount))) return false; }
+      else {
+        const hay = `${r.merchant} ${r.note} ${r.url}`.toLowerCase();
+        if (!hay.includes(filter.q.toLowerCase())) return false;
+      }
     }
     return true;
   });
@@ -182,15 +194,19 @@ function renderList() {
   }
   $("#empty").classList.add("hidden");
 
+  const dupes = findDuplicates(receipts);
   const nodes = filtered.map((r) => {
     const cat = categoryById(r.category, settings.categories);
+    const meta = el("div", { class: "item-meta" },
+      el("span", { class: "chip" }, cat.name),
+      el("span", { class: "faint" }, relativeDay(r.date)));
+    if (r.note) meta.append(el("span", { class: "item-note", title: r.note, html: ICONS.fileText }));
+    if (dupes.has(r.id)) meta.append(el("span", { class: "chip chip-warn", title: "Same merchant & amount within 7 days" }, "Duplicate?"));
     return el("div", { class: "item", onclick: () => openSheet(r) },
       el("span", { class: "cat-dot", style: `background:${cat.color}` }),
       el("div", { class: "item-main" },
         el("div", { class: "item-merch" }, r.merchant),
-        el("div", { class: "item-meta" },
-          el("span", { class: "chip" }, cat.name),
-          el("span", { class: "faint" }, relativeDay(r.date)))),
+        meta),
       el("div", { class: "item-amt num" }, formatMoney(r.amount, r.currency)));
   });
   nodes.forEach((n) => list.appendChild(n));
@@ -215,6 +231,8 @@ function buildCategoryFilter() {
 /* ---------- Wiring ---------- */
 function wire() {
   $("#settingsBtn").onclick = () => chrome.runtime.openOptionsPage();
+  $("#insightsBtn").onclick = openInsights;
+  $("#themeBtn").onclick = toggleTheme;
   $("#addBtn").onclick = () => openSheet(null);
   $("#captureBtn").onclick = captureCurrentPage;
   $("#scanBtn").onclick = () => scanFlow();
@@ -222,9 +240,40 @@ function wire() {
   $("#upsellBtn").onclick = () => openUpsell();
   $("#search").addEventListener("input", debounce((e) => { filter.q = e.target.value; renderList(); }, 160));
   $("#filterCat").addEventListener("change", (e) => { filter.cat = e.target.value; renderList(); });
-  document.addEventListener("keydown", (e) => {
-    if (e.key === "Escape") [...document.querySelectorAll(".sheet-backdrop")].pop()?._close?.();
-  });
+  updateThemeIcon();
+  $("#insightsBtn").innerHTML = ICONS.chart;
+  document.addEventListener("keydown", onShortcut);
+}
+
+/* ---------- Theme quick-toggle (free) ---------- */
+function updateThemeIcon() {
+  const dark = document.documentElement.dataset.theme === "dark";
+  $("#themeBtn").innerHTML = dark ? ICONS.sun : ICONS.moon;
+}
+async function toggleTheme() {
+  const dark = document.documentElement.dataset.theme === "dark";
+  settings = await saveSettings({ theme: dark ? "light" : "dark" });
+  applyAppearance(settings);
+  updateThemeIcon();
+  toast(dark ? "Light mode" : "Dark mode");
+}
+
+/* ---------- Keyboard shortcuts (free) ---------- */
+function onShortcut(e) {
+  if (e.key === "Escape") { [...document.querySelectorAll(".sheet-backdrop")].pop()?._close?.(); return; }
+  if (e.metaKey || e.ctrlKey || e.altKey) return;
+  if ($("#app").classList.contains("hidden")) return;          // not signed in
+  if (document.querySelector(".sheet-backdrop")) return;        // a sheet is open
+  const t = e.target;
+  if (t && (t.tagName === "INPUT" || t.tagName === "TEXTAREA" || t.tagName === "SELECT" || t.isContentEditable)) return;
+  const map = {
+    a: () => openSheet(null), n: () => openSheet(null),
+    "/": () => $("#search").focus(),
+    s: () => scanFlow(), e: () => exportFlow(),
+    i: () => openInsights(), c: () => captureCurrentPage(),
+  };
+  const fn = map[e.key.toLowerCase()] || map[e.key];
+  if (fn) { e.preventDefault(); fn(); }
 }
 
 async function captureCurrentPage() {
@@ -406,14 +455,72 @@ function openExportMenu() {
   node.innerHTML = `
     <h3>Export</h3>
     <div style="display:flex;flex-direction:column;gap:9px">
+      <button class="btn btn-ghost btn-block" id="x-pdf">${ICONS.fileText} Printable PDF report</button>
       <button class="btn btn-ghost btn-block" id="x-csv">${ICONS.fileText} All receipts — CSV</button>
       <button class="btn btn-ghost btn-block" id="x-acc">${ICONS.chart} Accounting / QuickBooks — CSV</button>
       <button class="btn btn-ghost btn-block" id="x-json">${ICONS.archive} Full backup — JSON</button>
     </div>`;
   const { close } = mountSheet(node);
+  node.querySelector("#x-pdf").onclick = () => { chrome.tabs.create({ url: chrome.runtime.getURL("report.html") }); close(); };
   node.querySelector("#x-csv").onclick = () => { download(`glean-${stamp()}.csv`, toCSV(receipts, settings.categories)); close(); toast(`Exported ${receipts.length} receipts`); };
   node.querySelector("#x-acc").onclick = () => { download(`glean-accounting-${stamp()}.csv`, toAccountingCSV(receipts, settings.categories)); close(); toast("Accounting CSV ready"); };
   node.querySelector("#x-json").onclick = () => { download(`glean-backup-${stamp()}.json`, toJSON(receipts), "application/json"); close(); toast("Backup saved"); };
+}
+
+/* ---------- Insights (streak: free · charts: Pro) ---------- */
+function openInsights() {
+  const pro = ent.isPro;
+  const fmt = (v) => formatMoney(v, settings.currency);
+  const streak = computeStreak(receipts);
+  const series = monthlySeries(receipts, settings.currency);
+  const hasMonthData = series.some((s) => s.total > 0);
+  const brk = categoryBreakdown(receipts, settings.currency, settings.categories);
+  const cats = topCategories(brk);
+
+  const streakLine = streak.current >= 1
+    ? `<div class="streak-num">${streak.current}-day streak ${ICONS.flame}</div><div class="streak-sub">Best run: ${streak.best} ${streak.best === 1 ? "day" : "days"}</div>`
+    : `<div class="streak-num">Start a streak</div><div class="streak-sub">Log a receipt today to begin</div>`;
+
+  const lockCta = `<div class="insight-lockcta"><span class="lk">${ICONS.lock}</span><button class="btn btn-primary btn-sm">Unlock with Pro</button></div>`;
+
+  const chartCard = `
+    <div class="insight-card ${pro ? "" : "insight-locked"}">
+      <div class="insight-h"><span>Spending over time</span>${pro ? "" : '<span class="lock">PRO</span>'}</div>
+      <div class="insight-body">${hasMonthData || !pro ? barChartSVG(series, fmt) : '<div class="insight-empty">No spend in the last 6 months yet.</div>'}</div>
+      ${pro ? "" : lockCta}
+    </div>`;
+
+  const legend = cats.map((c) =>
+    `<div class="row"><span class="sw" style="background:${c.color}"></span><span class="nm">${escapeHtml(c.name)}</span><span class="amt">${fmt(c.total)}</span></div>`).join("");
+  const breakdownCard = `
+    <div class="insight-card ${pro ? "" : "insight-locked"}">
+      <div class="insight-h"><span>By category</span>${pro ? "" : '<span class="lock">PRO</span>'}</div>
+      <div class="insight-body">${brk.total > 0 || !pro
+        ? `<div class="donut-row">${donutSVG(cats)}<div class="cat-legend">${legend || '<div class="insight-empty">No data</div>'}</div></div>`
+        : '<div class="insight-empty">Add a few receipts to see your breakdown.</div>'}</div>
+      ${pro ? "" : lockCta}
+    </div>`;
+
+  const node = el("div", { class: "insights" });
+  node.innerHTML = `
+    <h3>${ICONS.chart} Insights</h3>
+    <div class="insight-card streak-card">
+      <span class="streak-flame">${ICONS.flame}</span>
+      <div>${streakLine}</div>
+    </div>
+    ${chartCard}
+    ${breakdownCard}
+    <div class="insight-h" style="margin:14px 0 6px"><span>Keyboard shortcuts</span></div>
+    <div class="shortcuts">
+      <span class="kb"><kbd>A</kbd> Add</span>
+      <span class="kb"><kbd>S</kbd> Scan</span>
+      <span class="kb"><kbd>C</kbd> Capture</span>
+      <span class="kb"><kbd>/</kbd> Search</span>
+      <span class="kb"><kbd>E</kbd> Export</span>
+      <span class="kb"><kbd>I</kbd> Insights</span>
+    </div>`;
+  const { close } = mountSheet(node);
+  if (!pro) node.querySelectorAll(".insight-lockcta").forEach((c) => { c.onclick = () => { close(); setTimeout(() => openUpsell("Insights & charts are a Pro feature"), 200); }; });
 }
 
 function openUpsell(reason) {
@@ -425,6 +532,8 @@ function openUpsell(reason) {
     <ul style="list-style:none;display:flex;flex-direction:column;gap:9px;margin-bottom:16px;font-size:13px">
       <li style="display:flex;gap:9px;align-items:center"><span class="li-ic">${ICONS.scan}</span> AI receipt-photo scanning</li>
       <li style="display:flex;gap:9px;align-items:center"><span class="li-ic">${ICONS.check}</span> Auto-capture receipts as you browse</li>
+      <li style="display:flex;gap:9px;align-items:center"><span class="li-ic">${ICONS.chart}</span> Spending insights &amp; category charts</li>
+      <li style="display:flex;gap:9px;align-items:center"><span class="li-ic">${ICONS.fileText}</span> Printable PDF expense reports</li>
       <li style="display:flex;gap:9px;align-items:center"><span class="li-ic">${ICONS.check}</span> Unlimited CSV / QuickBooks / JSON export</li>
       <li style="display:flex;gap:9px;align-items:center"><span class="li-ic">${ICONS.check}</span> Custom categories, tax &amp; multi-currency</li>
     </ul>
@@ -494,8 +603,9 @@ function showProPopup() {
     <ul class="promo-feats">
       ${feat(ICONS.scan, "<b>AI receipt scan</b> — snap a photo, done")}
       ${feat(ICONS.zap, "Auto-capture receipts as you browse")}
-      ${feat(ICONS.chart, "Unlimited CSV / QuickBooks / JSON export")}
-      ${feat(ICONS.archive, "Custom categories, tax &amp; multi-currency")}
+      ${feat(ICONS.chart, "Spending insights &amp; category charts")}
+      ${feat(ICONS.fileText, "Printable PDF expense reports")}
+      ${feat(ICONS.archive, "Unlimited export + custom categories &amp; tax")}
     </ul>
     <div class="promo-cards">
       <button class="promo-card" id="pp-year" type="button">

@@ -76,7 +76,7 @@ a:hover { text-decoration: underline; }
 /* ---------- Inputs ---------- */
 .field { display: flex; flex-direction: column; gap: 6px; }
 .field > label { font-size: 12px; font-weight: 600; color: var(--text-muted); }
-input[type="text"], input[type="number"], input[type="date"], input[type="search"], select, textarea {
+input[type="text"], input[type="email"], input[type="number"], input[type="date"], input[type="search"], select, textarea {
   font: inherit; font-size: 13.5px; color: var(--text);
   background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-sm);
   padding: 9px 11px; width: 100%; outline: none;
