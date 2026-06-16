@@ -105,10 +105,7 @@ This is a complete, working MVP. To ship commercially:
 1. **Payments** — wire the upgrade buttons to **Stripe Payment Links** or **ExtensionPay**,
    and validate license keys against a backend in `lib/license.js` (`validateKey`/`activateKey`
    are offline stubs today).
-2. **Gmail harvesting** *(the killer v2 feature)* — read-only Gmail API to pull historical
-   receipts. ⚠️ Restricted scopes require Google's **CASA security audit** (~$500–4k/yr) — a
-   real barrier that also keeps competitors out.
-3. **Image/PDF receipts** — OCR for screenshots and attached PDFs.
-4. **Store listing** — privacy policy, screenshots, demo video.
+2. **Image/PDF receipts** — OCR for screenshots and attached PDFs.
+3. **Store listing** — privacy policy, screenshots, demo video.
 
 See `AI_PROMPT.md` for a complete spec you can hand to another AI to extend or rebuild Glean.

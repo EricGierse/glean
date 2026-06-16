@@ -198,7 +198,7 @@ function renderUpsell() {
   if (ent.tier === "pro") { u.classList.add("hidden"); return; }
   u.classList.remove("hidden");
   $("#upsellTitle").textContent = "Unlock Glean Pro";
-  $("#upsellSub").textContent = `3 days free, then $${PRICING.monthly.price}/mo — inbox sync, AI scan & more`;
+  $("#upsellSub").textContent = `3 days free, then $${PRICING.monthly.price}/mo — AI scan, auto-capture & more`;
   $("#upsellBtn").textContent = "Start free trial";
 }
 
@@ -420,7 +420,7 @@ function openUpsell(reason) {
     <p class="muted" style="margin:-2px 0 12px;font-size:12.5px">${reason ? escapeHtml(reason) + " · " : ""}3 days free, then $${m.price}/mo. Cancel anytime — no charge during the trial.</p>
     <ul style="list-style:none;display:flex;flex-direction:column;gap:9px;margin-bottom:16px;font-size:13px">
       <li style="display:flex;gap:9px;align-items:center"><span class="li-ic">${ICONS.scan}</span> AI receipt-photo scanning</li>
-      <li style="display:flex;gap:9px;align-items:center"><span class="li-ic">${ICONS.check}</span> Auto-capture from Gmail, Outlook &amp; Apple Mail</li>
+      <li style="display:flex;gap:9px;align-items:center"><span class="li-ic">${ICONS.check}</span> Auto-capture receipts as you browse</li>
       <li style="display:flex;gap:9px;align-items:center"><span class="li-ic">${ICONS.check}</span> Unlimited CSV / QuickBooks / JSON export</li>
       <li style="display:flex;gap:9px;align-items:center"><span class="li-ic">${ICONS.check}</span> Custom categories, tax &amp; multi-currency</li>
     </ul>
@@ -489,7 +489,6 @@ function showProPopup() {
     <h3 class="promo-h">Unlock everything Glean can do</h3>
     <ul class="promo-feats">
       ${feat(ICONS.scan, "<b>AI receipt scan</b> — snap a photo, done")}
-      ${feat(ICONS.check, "Inbox sync — Gmail, Outlook &amp; Apple Mail")}
       ${feat(ICONS.zap, "Auto-capture receipts as you browse")}
       ${feat(ICONS.chart, "Unlimited CSV / QuickBooks / JSON export")}
       ${feat(ICONS.archive, "Custom categories, tax &amp; multi-currency")}
