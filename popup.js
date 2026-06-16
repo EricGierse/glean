@@ -444,7 +444,7 @@ function openUpsell(reason) {
     </div>
     <button class="btn btn-block" id="u-close">Maybe later</button>`;
   const { close } = mountSheet(node);
-  const goCheckout = (plan) => chrome.tabs.create({ url: `${CHECKOUT_URL}?plan=${plan}` });
+  const goCheckout = (plan) => chrome.tabs.create({ url: CHECKOUT_URL[plan] || CHECKOUT_URL.monthly });
   node.querySelector("#plan-year").onclick = () => goCheckout("yearly");
   node.querySelector("#plan-month").onclick = () => goCheckout("monthly");
   node.querySelector("#u-close").onclick = close;
@@ -517,7 +517,7 @@ function showProPopup() {
   selPlan("yearly");
   cards.yearly.onclick = () => selPlan("yearly");
   cards.monthly.onclick = () => selPlan("monthly");
-  node.querySelector("#pp-start").onclick = () => chrome.tabs.create({ url: `${CHECKOUT_URL}?plan=${plan}` });
+  node.querySelector("#pp-start").onclick = () => chrome.tabs.create({ url: CHECKOUT_URL[plan] || CHECKOUT_URL.monthly });
   node.querySelector("#pp-key").onclick = () => { close(); setTimeout(() => openUpsell(), 230); };
   node.querySelector("#pp-later").onclick = close;
 }
