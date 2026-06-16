@@ -129,13 +129,18 @@
     .auth-card h2 { font-size: 21px; letter-spacing: -0.02em; }
     .auth-card > p { color: var(--text-muted); font-size: 13px; margin: 5px 0 20px; }
     .auth-btn { display: flex; align-items: center; justify-content: center; gap: 10px; width: 100%; font: inherit; font-weight: 600; font-size: 14px;
-      padding: 11px; margin-bottom: 10px; border-radius: var(--radius-sm); border: 1px solid var(--border); background: var(--surface); color: var(--text); cursor: pointer;
+      padding: 11px; margin-bottom: 10px; border-radius: 14px; border: 1px solid var(--border); background: var(--surface); color: var(--text); cursor: pointer;
       transition: background var(--dur), border-color var(--dur), transform var(--dur-fast) var(--ease), box-shadow var(--dur); }
     .auth-btn:hover { background: var(--surface-2); border-color: var(--border-strong); transform: translateY(-1px); box-shadow: var(--shadow-sm); }
     .auth-btn:active { transform: scale(0.98); }
     .auth-or { display: flex; align-items: center; gap: 10px; color: var(--text-faint); font-size: 11.5px; margin: 13px 0; }
     .auth-or::before, .auth-or::after { content: ""; flex: 1; height: 1px; background: var(--border); }
-    .auth-email { display: flex; flex-direction: column; gap: 9px; }
+    .auth-email { display: flex; flex-direction: column; gap: 10px; }
+    .email-wrap { position: relative; }
+    .email-wrap svg { position: absolute; left: 13px; top: 50%; transform: translateY(-50%); color: var(--text-muted); pointer-events: none; width: 16px; height: 16px; transition: color var(--dur); }
+    .email-wrap input { padding-left: 40px; border-radius: 14px; font-size: 14px; }
+    .email-wrap input:focus { border-color: var(--accent); }
+    .email-wrap input:focus + svg, .email-wrap:focus-within svg { color: var(--accent); }
     .auth-toggle { text-align: center; font-size: 12.5px; color: var(--text-muted); margin-top: 16px; }
     .auth-toggle a { cursor: pointer; font-weight: 700; color: var(--accent-strong); }
     .auth-toggle a:hover { text-decoration: underline; }
@@ -143,7 +148,7 @@
     /* Email verification code step */
     .auth-back { background: none; border: none; color: var(--text-muted); font: inherit; font-size: 12.5px; font-weight: 600; cursor: pointer; padding: 4px 0; margin-bottom: 6px; display: inline-flex; align-items: center; gap: 5px; transition: color var(--dur); }
     .auth-back:hover { color: var(--text); }
-    .code-input { text-align: center; font-family: var(--font-num); font-size: 27px; font-weight: 800; letter-spacing: 12px; padding: 15px 10px; margin: 6px 0 4px; text-indent: 12px; }
+    .code-input { text-align: center; font-family: var(--font-num); font-size: 27px; font-weight: 800; letter-spacing: 12px; padding: 15px 10px; margin: 6px 0 4px; text-indent: 12px; border-radius: 14px; }
     .code-input.shake { animation: codeShake 0.4s var(--ease); border-color: var(--danger); }
     @keyframes codeShake { 10%, 90% { transform: translateX(-2px); } 30%, 70% { transform: translateX(4px); } 50% { transform: translateX(-7px); } }
     .code-row { display: flex; align-items: center; justify-content: space-between; margin-top: 15px; font-size: 12.5px; }
@@ -279,7 +284,10 @@
       <button class="auth-btn" id="authGoogle"><svg width="18" height="18" viewBox="0 0 24 24"><path fill="#4285F4" d="M23.5 12.3c0-.8-.1-1.6-.2-2.3H12v4.5h6.5c-.3 1.5-1.1 2.7-2.4 3.6v3h3.9c2.3-2.1 3.6-5.2 3.6-8.8z"/><path fill="#34A853" d="M12 24c3.2 0 6-1.1 7.9-2.9l-3.9-3c-1.1.7-2.5 1.2-4 1.2-3.1 0-5.7-2.1-6.6-4.9H1.4v3.1C3.3 21.3 7.3 24 12 24z"/><path fill="#FBBC05" d="M5.4 14.4c-.2-.7-.4-1.4-.4-2.4s.1-1.7.4-2.4V6.5H1.4C.5 8.2 0 10 0 12s.5 3.8 1.4 5.5l4-3.1z"/><path fill="#EA4335" d="M12 4.8c1.8 0 3.4.6 4.6 1.8l3.4-3.4C17.9 1.2 15.2 0 12 0 7.3 0 3.3 2.7 1.4 6.5l4 3.1C6.3 6.9 8.9 4.8 12 4.8z"/></svg> Continue with Google</button>
       <div class="auth-or"><span>or</span></div>
       <div class="auth-email">
-        <input id="authEmail" type="email" placeholder="you@email.com" autocomplete="email" />
+        <div class="email-wrap">
+          <input id="authEmail" type="email" placeholder="you@email.com" autocomplete="email" />
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h16v16H4z"/><path d="m4 6 8 6 8-6"/></svg>
+        </div>
         <button class="btn btn-primary btn-block" id="authEmailBtn">Continue with email</button>
       </div>
       <p class="auth-toggle"><span id="authToggleText">Already have an account?</span> <a id="authToggle">Log in</a></p>

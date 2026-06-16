@@ -70,10 +70,14 @@ function showAuth() {
       $("#codeEmail").textContent = r.email;
       $("#codeInput").value = "";
       const dev = $("#codeDev");
-      if (r.devCode) { dev.textContent = `Testing mode — your code is ${r.devCode}`; dev.classList.remove("hidden"); }
+      if (r.devCode) { dev.textContent = `Dev mode — your code is ${r.devCode}`; dev.classList.remove("hidden"); }
       else if (r.demo) { dev.textContent = "Demo mode — enter any 6 digits to continue"; dev.classList.remove("hidden"); }
-      else if (r.emailed === false) { dev.textContent = "Email sending isn't set up yet — enter any 6 digits"; dev.classList.remove("hidden"); pending.demo = true; }
-      else { dev.classList.add("hidden"); }
+      else if (r.emailed === false) {
+        const hint = r.emailError === "validation_error"
+          ? "Resend only sends to verified emails on the free plan — verify your domain at resend.com/domains, or enter any 6 digits to test"
+          : "Email couldn't be sent right now — enter any 6 digits to test";
+        dev.textContent = hint; dev.classList.remove("hidden"); pending.demo = true;
+      } else { dev.classList.add("hidden"); }
       showPanel("code");
       setTimeout(() => $("#codeInput").focus(), 60);
     } finally { btn.disabled = false; }

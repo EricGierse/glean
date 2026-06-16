@@ -99,10 +99,11 @@ async function authRequest(body, env) {
   const code = genCode();
   const exp = Date.now() + CODE_TTL_MS;
   const sig = await hmacHex(env.AUTH_SECRET, `${email}.${code}.${exp}`);
-  const emailed = await sendCodeEmail(env, email, code);
+  const { sent, reason } = await sendCodeEmail(env, email, code);
 
-  const res = { ok: true, exp, sig, emailed };
-  if (env.DEV_AUTH === "1") res.devCode = code; // testing only — never enable in production
+  const res = { ok: true, exp, sig, emailed: sent };
+  if (!sent) res.emailError = reason; // surface why email failed (never contains secrets)
+  if (env.DEV_AUTH === "1") res.devCode = code;
   return json(res, 200);
 }
 
@@ -126,7 +127,7 @@ async function authVerify(body, env) {
 }
 
 async function sendCodeEmail(env, email, code) {
-  if (!env.RESEND_API_KEY) return false;
+  if (!env.RESEND_API_KEY) return { sent: false, reason: "no-key" };
   const from = env.MAIL_FROM || "Glean <onboarding@resend.dev>";
   const html = `
     <div style="font-family:-apple-system,Segoe UI,Roboto,sans-serif;max-width:420px;margin:auto;padding:8px">
@@ -143,8 +144,10 @@ async function sendCodeEmail(env, email, code) {
       body: JSON.stringify({ from, to: [email], subject: `${code} is your Glean code`,
         html, text: `Your Glean verification code is ${code}. It expires in 10 minutes.` }),
     });
-    return r.ok;
-  } catch { return false; }
+    if (r.ok) return { sent: true };
+    const d = await r.json().catch(() => ({}));
+    return { sent: false, reason: d?.name || d?.message || `resend-${r.status}` };
+  } catch (e) { return { sent: false, reason: e?.message || "network" }; }
 }
 
 /* ===================== helpers ===================== */
