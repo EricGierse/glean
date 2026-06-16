@@ -27,7 +27,7 @@
   "permissions": ["storage", "unlimitedStorage", "contextMenus", "activeTab", "identity"],
   "host_permissions": ["https://generativelanguage.googleapis.com/*", "https://www.googleapis.com/*"],
   "oauth2": {
-    "client_id": "REPLACE_WITH_YOUR_GOOGLE_OAUTH_CLIENT_ID.apps.googleusercontent.com",
+    "client_id": "1041998328095-s7mqva8nj989tpnhs2ikrla8qh9kir34.apps.googleusercontent.com",
     "scopes": ["openid", "email", "profile"]
   },
   "content_scripts": [
